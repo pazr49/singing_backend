@@ -1,5 +1,7 @@
+import time
+
 from flask import request
-from utils.save_files import save_files
+
 
 def upload_files():
     if 'file' not in request.files:
@@ -7,7 +9,13 @@ def upload_files():
 
     files = request.files.getlist('file')
 
-    return save_files(files)
+    if len(files) == 0:
+        return 'No file selected', 400
+
+    for index, file in enumerate(files):
+        file.save('./song_files/uploaded_video_{index}.mp4')
+
+    return 'Files uploaded successfully'
 
 
 def upload_file():
@@ -21,3 +29,5 @@ def upload_file():
 
     file.save('uploaded_video.mp4')
     return 'File uploaded successfully'
+
+
