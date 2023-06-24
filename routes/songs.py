@@ -13,7 +13,9 @@ def get_song_by_id(song_id):
         song = {
             'id': result[0],
             'name': result[1],
-            'num_parts': result[2]
+            'num_parts': result[2],
+            'backing_track': result[3],
+            'key': result[4],
         }
         return jsonify(song)
     else:

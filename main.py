@@ -2,9 +2,6 @@ import librosa
 from audio_offset_finder.audio_offset_finder import find_offset_between_files
 from flask import Flask
 
-from utils.auto_tune import auto_tune
-from utils.generate_composite_video import generate_composite_video
-
 app = Flask(__name__)
 
 from routes.ping import ping
@@ -19,8 +16,9 @@ app.add_url_rule('/ping', view_func=ping, methods=['GET'])
 app.add_url_rule('/songs', view_func=get_songs, methods=['GET'])
 app.add_url_rule('/songs/<string:song_id>', view_func=get_song_by_id, methods=['GET'])
 app.add_url_rule('/songs/<string:song_id>/song_parts', view_func=get_parts, methods=['GET'])
+app.add_url_rule('/create_output_video', view_func=create_output_video, methods=['POST'])
 
 
 if __name__ == '__main__':
-   #create_output_video()
-   app.run(host='0.0.0.0', port=8000)
+   with app.app_context():
+      app.run(host='0.0.0.0', port=8000)

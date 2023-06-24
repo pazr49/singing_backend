@@ -13,7 +13,7 @@ def upload_files():
         return 'No file selected', 400
 
     for index, file in enumerate(files):
-        file.save('./song_files/uploaded_video_{index}.mp4')
+        file.save(f'./song_files/uploaded_video_{index}.mp4')
 
     return 'Files uploaded successfully'
 

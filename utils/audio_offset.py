@@ -16,12 +16,10 @@ all others need to move by the difference between the backing track and the most
 
 '''
 
-
 def align_clips(uploaded_clips, backing_track):
     # find the peaks in the audio for the backing track
     backing_track_peaks = find_peaks_audio(backing_track)
-
-    print('Backing track peaks are:', backing_track_peaks)
+    print('backing track peaks are ', backing_track_peaks)
 
     # the forward clip is the clip that starts latest
     largest_offset = 0
@@ -31,47 +29,46 @@ def align_clips(uploaded_clips, backing_track):
     # between each video clip and the backing track
     for i in range(len(uploaded_clips)):
         video_peaks = find_peaks_video(uploaded_clips[i].path)
-        print('Video peaks are:', video_peaks)
+        print(f'video peaks {i} are ', video_peaks)
         offset = find_offset_between_peaks(video_peaks, backing_track_peaks)
+        print(f'offset for video {i} is {offset}')
         uploaded_clips[i].time_offset = offset
 
         if offset > largest_offset:
             largest_offset = offset
             forward_clip = uploaded_clips[i]
 
-
     backing_track = AudioFileClip(backing_track)
-    aligned_clips = []
 
     # if forward_clip is not None, then the backing track starts latest and all other clips can be moved
     # forwards by their offset
     if forward_clip is None:
-        print('No forward clip')
+        print('backing track is forward')
         for i in range(len(uploaded_clips)):
-            clip = VideoFileClip(uploaded_clips[i].path)
-            clip = clip.set_start(abs(float(uploaded_clips[i].time_offset)))
-            aligned_clips.append(clip)
+            print(f'moving clip {i} forward by ', uploaded_clips[i].time_offset)
+            uploaded_clips[i].video_clip = uploaded_clips[i].video_clip.set_start(abs(float(uploaded_clips[i].time_offset)))
+            uploaded_clips[i].audio_clip = uploaded_clips[i].audio_clip.set_start(abs(float(uploaded_clips[i].time_offset)))
 
     # if forward_clip is not None, then we have to find the most forward clip then move all other clips and
     # the backing track forwards to that point
     else:
+        print('forward clip is ', forward_clip.path)
+        print('moving backing track forward by ', forward_clip.time_offset)
         backing_track = backing_track.set_start(abs(float(forward_clip.time_offset)))
         for i in range(len(uploaded_clips)):
             if uploaded_clips[i] is not forward_clip:
-                print('Not the forward clip')
-                clip = VideoFileClip(uploaded_clips[i].path)
-                clip = clip.set_start(abs(float(uploaded_clips[i].time_offset - forward_clip.time_offset)))
-                aligned_clips.append(clip)
+                print(f'moving clip {i} forward by ', forward_clip.time_offset - uploaded_clips[i].time_offset)
+                uploaded_clips[i].video_clip = uploaded_clips[i].video_clip.set_start(abs(float(forward_clip.time_offset - uploaded_clips[i].time_offset)))
+                uploaded_clips[i].audio_clip = uploaded_clips[i].audio_clip.set_start(abs(float(forward_clip.time_offset - uploaded_clips[i].time_offset)))
             else:
-                print('Forward clip')
-                clip = VideoFileClip(uploaded_clips[i].path)
-                clip = clip.set_start(0)
-                aligned_clips.append(clip)
+                uploaded_clips[i].video_clip = uploaded_clips[i].video_clip.set_start(0)
 
-    # set the audio for each clip to the auto-tuned audio
-    for i in range(len(aligned_clips)):
-        print('Auto-tuned audio path is:', uploaded_clips[i].auto_tuned_audio_path)
-        aligned_clips[i] = aligned_clips[i].set_audio(AudioFileClip(uploaded_clips[i].auto_tuned_audio_path))
+    aligned_clips = []
+    # set the audio for each video clip to the auto-tuned audio
+    for i in range(len(uploaded_clips)):
+        clip = uploaded_clips[i].video_clip
+        clip = clip.set_audio(uploaded_clips[i].audio_clip)
+        aligned_clips.append(clip)
 
     # return the aligned clips and the backing track
     return aligned_clips, backing_track
@@ -89,22 +86,19 @@ def find_offset_between_peaks(video_peaks, backing_track_peaks):
     # loop through the peaks and find the difference between them
     for num1, num2 in zip(video_peaks, backing_track_peaks):
         difference = num1 - num2
-        print('Difference is:', difference)
         differences.append(difference)
 
     average_offset = sum(differences) / len(differences)
-    print('Average offset is:', average_offset)
     return average_offset
 
 
 def find_peaks_audio(audio_file):
     # https://stackoverflow.com/questions/1713335/peak-finding-algorithm-for-python-scipy
     # Load the WAV file
-    print('Audio file is:', audio_file)
     audio = AudioSegment.from_mp3(audio_file)
     audio = audio[:10000]  # Keep only the first 10 seconds (assuming 1 second = 1000 milliseconds)
-    audio.export('./song_files/tmp.wav', format='wav')
-    sample_rate, audio_data = wavfile.read('./song_files/tmp.wav')
+    audio.export('./projects/tmp.wav', format='wav')
+    sample_rate, audio_data = wavfile.read('./projects/tmp.wav')
 
     # Extract the audio channel (assuming mono audio)
     audio_channel = audio_data[:, 0] if audio_data.ndim > 1 else audio_data
@@ -120,7 +114,6 @@ def find_peaks_audio(audio_file):
 
 
 def find_peaks_video(filename, threshold=0.5, prominence=0.5, distance=20000):
-    print('Video file is:', filename)
     # Load the video file
     video = mp.VideoFileClip(filename).subclip(0, 10)
 
